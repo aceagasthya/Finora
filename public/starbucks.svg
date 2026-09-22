@@ -1,0 +1,17 @@
+<svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="50" cy="50" r="50" fill="#00704A"/>
+  <circle cx="50" cy="50" r="47" stroke="#ffffff" stroke-width="1.5" opacity="0.3"/>
+  <circle cx="50" cy="50" r="38" stroke="#ffffff" stroke-width="2"/>
+  <!-- Siren Star Crown -->
+  <path d="M50 20L52 25L57 26L53 30L54 35L50 32L46 35L47 30L43 26L48 25L50 20Z" fill="#ffffff"/>
+  <!-- Siren Face & Hair stylized waves -->
+  <circle cx="50" cy="42" r="7" fill="#ffffff"/>
+  <path d="M43 45C43 45 45 52 50 52C55 52 57 45 57 45C60 50 63 56 63 64C63 71 58 76 50 76C42 76 37 71 37 64C37 56 40 50 43 45Z" fill="#00704A"/>
+  <path d="M47 43C47 44 48 45 50 45C52 45 53 44 53 43C53 42 52 41 50 41C48 41 47 42 47 43Z" fill="#ffffff"/>
+  <!-- Crown waves left and right -->
+  <path d="M30 40C33 35 38 34 42 36C40 40 37 45 35 52C32 50 30 45 30 40Z" fill="#ffffff"/>
+  <path d="M70 40C67 35 62 34 58 36C60 40 63 45 65 52C68 50 70 45 70 40Z" fill="#ffffff"/>
+  <!-- Twin fish tails -->
+  <path d="M22 62C25 56 31 54 35 57C34 64 36 71 40 76C35 77 28 75 25 70C23 67 22 65 22 62Z" fill="#ffffff"/>
+  <path d="M78 62C75 56 69 54 65 57C66 64 64 71 60 76C65 77 72 75 75 70C77 67 78 65 78 62Z" fill="#ffffff"/>
+</svg>

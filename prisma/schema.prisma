@@ -1,0 +1,58 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                  String        @id @default(cuid())
+  email               String        @unique
+  password            String
+  name                String
+  phone               String?
+  kycStatus           String        @default("pending")
+  bitgoAddressId      String?       @unique
+  usdcDepositAddress  String?       @unique
+  inrWalletId         String?       @unique
+  inrUpiId            String?       @unique
+  inrUpiPin           String?
+  virtualUsdcBalance  Decimal       @default(0)
+  virtualInrBalance   Decimal       @default(0)
+  transactions        Transaction[]
+  ledgerEntries       LedgerEntry[]
+  createdAt           DateTime      @default(now())
+}
+
+model Transaction {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  type            String
+  asset           String
+  amount          Decimal
+  status          String
+  txHash          String?
+  fromAddress     String?
+  toAddress       String?
+  bitgoTransferId String?
+  merchantUpiId   String?
+  utr             String?
+  metadata        String?
+  createdAt       DateTime @default(now())
+}
+
+model LedgerEntry {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  type          String
+  asset         String
+  amount        Decimal
+  balanceAfter  Decimal
+  description   String
+  transactionId String?
+  createdAt     DateTime @default(now())
+}
