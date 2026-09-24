@@ -19,6 +19,7 @@ import {
   Clock,
   Layers,
 } from 'lucide-react';
+import { copyTextToClipboard } from '@/lib/clipboard';
 
 export default function HistoryPage() {
   const router = useRouter();
@@ -54,10 +55,13 @@ export default function HistoryPage() {
     window.location.href = `/api/transactions?format=csv&type=${activeFilter}`;
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedHash(true);
-    setTimeout(() => setCopiedHash(false), 2000);
+  const copyToClipboard = async (text: string) => {
+    if (!text) return;
+    const ok = await copyTextToClipboard(text);
+    if (ok) {
+      setCopiedHash(true);
+      setTimeout(() => setCopiedHash(false), 2000);
+    }
   };
 
   const filtered = transactions.filter((t) => {

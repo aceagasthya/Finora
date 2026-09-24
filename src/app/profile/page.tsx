@@ -19,8 +19,11 @@ import {
   Wallet,
   Building,
   Sparkles,
+  RefreshCw,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { getUserAvatarUrl, generateUniqueAvatarUrl } from '@/lib/avatar';
+import { copyTextToClipboard } from '@/lib/clipboard';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -100,20 +103,37 @@ export default function ProfilePage() {
     }
   };
 
+  const handleRandomizeAvatar = async () => {
+    const newAvatar = generateUniqueAvatarUrl(`${user.email || user.name || 'user'}-${Date.now()}`);
+    setUser((prev: any) => ({ ...prev, avatarUrl: newAvatar }));
+    try {
+      await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatarUrl: newAvatar }),
+      });
+    } catch (err) {
+      console.error('Failed to persist avatar:', err);
+    }
+  };
+
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
     router.push('/login');
     router.refresh();
   };
 
-  const copyToClipboard = (text: string, type: 'usdc' | 'upi') => {
-    navigator.clipboard.writeText(text);
-    if (type === 'usdc') {
-      setCopiedUsdc(true);
-      setTimeout(() => setCopiedUsdc(false), 2000);
-    } else {
-      setCopiedUpi(true);
-      setTimeout(() => setCopiedUpi(false), 2000);
+  const copyToClipboard = async (text: string, type: 'usdc' | 'upi') => {
+    if (!text) return;
+    const ok = await copyTextToClipboard(text);
+    if (ok) {
+      if (type === 'usdc') {
+        setCopiedUsdc(true);
+        setTimeout(() => setCopiedUsdc(false), 2000);
+      } else {
+        setCopiedUpi(true);
+        setTimeout(() => setCopiedUpi(false), 2000);
+      }
     }
   };
 
@@ -143,8 +163,24 @@ export default function ProfilePage() {
 
       {/* User Card */}
       <div className="glass-card rounded-3xl p-6 border border-white/10 text-center mb-5 shadow-xl relative overflow-hidden">
-        <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-[#00BAF2] to-purple-600 flex items-center justify-center text-xl font-bold text-white mx-auto mb-3 shadow-lg shadow-[#00BAF2]/25">
-          {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+        <div className="relative inline-block mx-auto mb-3 group">
+          <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-white/20 bg-neutral-900 shadow-xl shadow-[#00BAF2]/20 mx-auto">
+            <img
+              src={user.avatarUrl || getUserAvatarUrl(user)}
+              alt={user.name || 'User'}
+              className="w-full h-full object-cover bg-neutral-800"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = getUserAvatarUrl(user);
+              }}
+            />
+          </div>
+          <button
+            onClick={handleRandomizeAvatar}
+            title="Generate a new avatar style"
+            className="absolute -bottom-1 -right-1 p-1.5 rounded-full bg-cyan-500 hover:bg-cyan-400 text-black shadow-lg transition-transform hover:scale-110 active:scale-95"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+          </button>
         </div>
 
         <h1 className="text-lg font-bold text-white">{user.name}</h1>

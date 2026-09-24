@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
       merchantName,
       recipientAddress,
       pin,
+      alreadyConverted,
     } = await req.json();
 
     const numAmount = parseFloat(amount);
@@ -144,8 +145,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Handle Flow A: Paying UPI Merchant USING USDC
-    if (flow === 'FLOW_A' && (paymentMethod === 'USDC' || !user.virtualInrBalance || Number(user.virtualInrBalance) < numAmount)) {
+    // Handle Flow A: Paying UPI Merchant USING USDC (1-click direct without prior conversion)
+    if (
+      !alreadyConverted &&
+      paymentMethod !== 'INR' &&
+      flow === 'FLOW_A' &&
+      (!user.virtualInrBalance || Number(user.virtualInrBalance) < numAmount)
+    ) {
       const targetMerchant = merchantUpiId || 'merchant@upi';
       const merchantInfo = await m2pMock.resolveMerchant(targetMerchant);
       const displayMerchantName = merchantName || merchantInfo.payeeName;
@@ -249,8 +255,8 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Handle Flow C: Direct INR to UPI Merchant
-    if (flow === 'FLOW_C' || flow === 'FLOW_A') {
+    // Handle Flow C / Converted INR: Settle UPI payment by deducting from user's virtual INR balance
+    if (flow === 'FLOW_C' || flow === 'FLOW_A' || alreadyConverted || paymentMethod === 'INR') {
       const targetMerchant = merchantUpiId || 'merchant@upi';
       const merchantInfo = await m2pMock.resolveMerchant(targetMerchant);
       const displayMerchantName = merchantName || merchantInfo.payeeName;

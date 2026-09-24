@@ -87,7 +87,7 @@ export default function MobileBottomNav() {
 
           {/* 4. Cards */}
           <Link
-            href="/dashboard"
+            href="/cards"
             className={`flex-1 flex flex-col items-center justify-center py-1 transition group ${
               isCards ? 'text-white' : 'text-neutral-500 hover:text-neutral-300'
             }`}

@@ -19,6 +19,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { copyTextToClipboard } from '@/lib/clipboard';
 
 export default function DepositPage() {
   const router = useRouter();
@@ -146,14 +147,17 @@ export default function DepositPage() {
     }
   };
 
-  const copyToClipboard = (text: string, type: 'addr' | 'upi') => {
-    navigator.clipboard.writeText(text);
-    if (type === 'addr') {
-      setCopiedAddr(true);
-      setTimeout(() => setCopiedAddr(false), 2000);
-    } else {
-      setCopiedUpi(true);
-      setTimeout(() => setCopiedUpi(false), 2000);
+  const copyToClipboard = async (text: string, type: 'addr' | 'upi') => {
+    if (!text) return;
+    const ok = await copyTextToClipboard(text);
+    if (ok) {
+      if (type === 'addr') {
+        setCopiedAddr(true);
+        setTimeout(() => setCopiedAddr(false), 2000);
+      } else {
+        setCopiedUpi(true);
+        setTimeout(() => setCopiedUpi(false), 2000);
+      }
     }
   };
 

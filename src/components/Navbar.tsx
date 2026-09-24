@@ -15,7 +15,9 @@ import {
   TrendingUp,
   ShieldCheck,
   CheckCircle2,
+  CreditCard,
 } from 'lucide-react';
+import { getUserAvatarUrl } from '@/lib/avatar';
 
 interface NavbarProps {
   user?: any;
@@ -45,6 +47,7 @@ export default function Navbar({ user: initialUser }: NavbarProps) {
 
   const navItems = [
     { label: 'Dashboard', href: '/dashboard', icon: Wallet },
+    { label: 'Cards', href: '/cards', icon: CreditCard },
     { label: 'Scan & Pay', href: '/pay', icon: Scan, badge: 'Live' },
     { label: 'Send USDC', href: '/send', icon: ArrowUpRight },
     { label: 'Deposit', href: '/deposit', icon: ArrowDownLeft },
@@ -142,11 +145,11 @@ export default function Navbar({ user: initialUser }: NavbarProps) {
                 >
                   <div className="relative">
                     <img
-                      src="/agasthya-avatar.jpg"
+                      src={user.avatarUrl || getUserAvatarUrl(user)}
                       alt={user.name || 'User'}
-                      className="w-7 h-7 rounded-full object-cover ring-1 ring-white/20"
+                      className="w-7 h-7 rounded-full object-cover ring-1 ring-white/20 bg-neutral-800"
                       onError={(e) => {
-                        (e.target as HTMLElement).style.display = 'none';
+                        (e.target as HTMLImageElement).src = getUserAvatarUrl(user);
                       }}
                     />
                     <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-black" />

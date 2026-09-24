@@ -19,6 +19,7 @@ model User {
   inrWalletId         String?       @unique
   inrUpiId            String?       @unique
   inrUpiPin           String?
+  avatarUrl           String?
   virtualUsdcBalance  Decimal       @default(0)
   virtualInrBalance   Decimal       @default(0)
   transactions        Transaction[]

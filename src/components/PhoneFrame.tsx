@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import StatusBar from './StatusBar';
 import MobileBottomNav from './MobileBottomNav';
+import { getUserAvatarUrl } from '@/lib/avatar';
 
 interface PhoneFrameProps {
   children: React.ReactNode;
@@ -29,12 +30,35 @@ export default function PhoneFrame({ children }: PhoneFrameProps) {
   const isAuthPage = pathname === '/login' || pathname === '/signup' || pathname === '/' || pathname === '/onboarding';
 
   return (
-    <div className="min-h-screen bg-[#000000] flex items-center justify-center p-0 sm:p-4 bg-finora-pattern select-none">
+    <div className="min-h-screen bg-[#000000] flex items-center justify-center p-0 sm:p-4 select-none relative overflow-hidden">
+      {/* Outer desktop background */}
+      <div
+        className="fixed inset-0 pointer-events-none -z-20 bg-[#000000]"
+        style={{
+          backgroundImage: `url('/bg-pattern.jpg')`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center top',
+          backgroundRepeat: 'no-repeat',
+          opacity: 0.35,
+        }}
+      />
+
       {/* 400px Phone Container */}
       <div
-        className="phone-frame w-full sm:max-w-[400px] bg-black rounded-none sm:rounded-[32px] overflow-hidden shadow-[0_25px_70px_rgba(0,0,0,0.95),0_0_0_1px_rgba(255,255,255,0.12)] border-0 sm:border sm:border-white/10 relative flex flex-col h-screen sm:h-[844px]"
-        style={{ maxWidth: '400px', backgroundColor: '#000000' }}
+        className="phone-frame w-full sm:max-w-[400px] rounded-none sm:rounded-[32px] overflow-hidden shadow-[0_25px_70px_rgba(0,0,0,0.95),0_0_0_1px_rgba(255,255,255,0.12)] border-0 sm:border sm:border-white/10 relative flex flex-col h-screen sm:h-[844px] bg-[#000000]"
+        style={{ maxWidth: '400px' }}
       >
+        {/* Phone Fixed Base Background Pattern (Guaranteed render on iOS Safari & Android) */}
+        <div
+          className="absolute inset-0 pointer-events-none -z-10 bg-[#000000]"
+          style={{
+            backgroundImage: `url('/bg-pattern.jpg')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center top',
+            backgroundRepeat: 'no-repeat',
+          }}
+        />
+
         {/* 1. Phone Top: Status Bar (time, dynamic island, wifi, battery) */}
         <StatusBar />
 
@@ -84,14 +108,15 @@ export default function PhoneFrame({ children }: PhoneFrameProps) {
                   style={{ width: '28px', height: '28px', maxWidth: '28px', maxHeight: '28px' }}
                 >
                   <img
-                    src="/agasthya-avatar.jpg"
+                    src={user.avatarUrl || getUserAvatarUrl(user)}
                     alt={user.name || 'User'}
                     width={28}
                     height={28}
                     style={{ width: '28px', height: '28px', objectFit: 'cover' }}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover bg-neutral-800"
                     onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
+                      // Fallback to deterministic avatar if image fails
+                      (e.target as HTMLImageElement).src = getUserAvatarUrl(user);
                     }}
                   />
                 </div>

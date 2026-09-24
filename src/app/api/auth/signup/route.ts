@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { hashPassword, signToken } from '@/lib/auth';
+import { generateUniqueAvatarUrl } from '@/lib/avatar';
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,6 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     const hashedPassword = await hashPassword(password);
+    const avatarUrl = generateUniqueAvatarUrl(cleanEmail || name);
 
     const user = await prisma.user.create({
       data: {
@@ -31,6 +33,7 @@ export async function POST(req: NextRequest) {
         password: hashedPassword,
         phone: phone || null,
         kycStatus: 'pending',
+        avatarUrl,
         virtualUsdcBalance: 0,
         virtualInrBalance: 0,
       },
@@ -46,6 +49,7 @@ export async function POST(req: NextRequest) {
         name: user.name,
         email: user.email,
         phone: user.phone,
+        avatarUrl: user.avatarUrl,
         kycStatus: user.kycStatus,
       },
     });

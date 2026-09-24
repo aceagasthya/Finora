@@ -19,6 +19,7 @@ import {
   FileCheck,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { copyTextToClipboard } from '@/lib/clipboard';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -118,14 +119,17 @@ export default function OnboardingPage() {
     }
   };
 
-  const copyToClipboard = (text: string, type: 'usdc' | 'upi') => {
-    navigator.clipboard.writeText(text);
-    if (type === 'usdc') {
-      setCopiedUsdc(true);
-      setTimeout(() => setCopiedUsdc(false), 2000);
-    } else {
-      setCopiedUpi(true);
-      setTimeout(() => setCopiedUpi(false), 2000);
+  const copyToClipboard = async (text: string, type: 'usdc' | 'upi') => {
+    if (!text) return;
+    const ok = await copyTextToClipboard(text);
+    if (ok) {
+      if (type === 'usdc') {
+        setCopiedUsdc(true);
+        setTimeout(() => setCopiedUsdc(false), 2000);
+      } else {
+        setCopiedUpi(true);
+        setTimeout(() => setCopiedUpi(false), 2000);
+      }
     }
   };
 

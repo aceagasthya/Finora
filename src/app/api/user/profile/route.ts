@@ -9,13 +9,14 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { name, phone } = await req.json();
+    const { name, phone, avatarUrl } = await req.json();
 
     const updated = await prisma.user.update({
       where: { id: session.id },
       data: {
         name: name || undefined,
         phone: phone !== undefined ? phone : undefined,
+        avatarUrl: avatarUrl !== undefined ? avatarUrl : undefined,
       },
     });
 
@@ -26,6 +27,7 @@ export async function PUT(req: NextRequest) {
         name: updated.name,
         email: updated.email,
         phone: updated.phone,
+        avatarUrl: updated.avatarUrl,
         kycStatus: updated.kycStatus,
         usdcDepositAddress: updated.usdcDepositAddress,
         inrUpiId: updated.inrUpiId,

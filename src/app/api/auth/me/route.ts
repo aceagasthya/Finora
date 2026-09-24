@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentUser } from '@/lib/auth';
 import prisma from '@/lib/prisma';
+import { getUserAvatarUrl } from '@/lib/avatar';
 
 export async function GET() {
   try {
@@ -21,6 +22,7 @@ export async function GET() {
         usdcDepositAddress: true,
         inrWalletId: true,
         inrUpiId: true,
+        avatarUrl: true,
         virtualUsdcBalance: true,
         virtualInrBalance: true,
         createdAt: true,
@@ -41,6 +43,7 @@ export async function GET() {
     return NextResponse.json({
       user: {
         ...user,
+        avatarUrl: user.avatarUrl || getUserAvatarUrl(user),
         virtualUsdcBalance: Number(user.virtualUsdcBalance),
         virtualInrBalance: Number(user.virtualInrBalance),
       },

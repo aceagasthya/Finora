@@ -19,6 +19,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { copyTextToClipboard } from '@/lib/clipboard';
 
 const DEFAULT_USER = {
   id: '',
@@ -115,15 +116,17 @@ export default function DashboardPage() {
     loadUserData();
   };
 
-  const copyToClipboard = (text: string, type: 'usdc' | 'inr') => {
+  const copyToClipboard = async (text: string, type: 'usdc' | 'inr') => {
     if (!text) return;
-    navigator.clipboard.writeText(text);
-    if (type === 'usdc') {
-      setCopiedUsdc(true);
-      setTimeout(() => setCopiedUsdc(false), 2000);
-    } else {
-      setCopiedInr(true);
-      setTimeout(() => setCopiedInr(false), 2000);
+    const ok = await copyTextToClipboard(text);
+    if (ok) {
+      if (type === 'usdc') {
+        setCopiedUsdc(true);
+        setTimeout(() => setCopiedUsdc(false), 2000);
+      } else {
+        setCopiedInr(true);
+        setTimeout(() => setCopiedInr(false), 2000);
+      }
     }
   };
 
