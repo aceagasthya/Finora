@@ -63,7 +63,7 @@ export default function PhoneFrame({ children }: PhoneFrameProps) {
         <StatusBar />
 
         {/* 2. Top Header: Finora Logo on Left Corner + Profile on Right */}
-        <div className="w-full px-4 py-2 shrink-0 bg-black/85 backdrop-blur-md border-b border-white/[0.06] flex items-center justify-between z-40">
+        <div className="w-full px-4 py-2 shrink-0 bg-transparent backdrop-blur-sm border-b border-white/[0.06] flex items-center justify-between z-40">
           {/* Left Corner: Back Button (if on subpage) + Finora 3D Logo + Brand Text */}
           <div className="flex items-center gap-2">
             {!isDashboard && !isAuthPage && (

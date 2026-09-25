@@ -12,19 +12,17 @@ import {
   Sparkles,
   ShieldCheck,
   AlertCircle,
-  HelpCircle,
-  ChevronRight,
   TrendingUp,
-  RefreshCw,
   Lock,
   ArrowRight,
   Check,
-  Zap,
-  ExternalLink,
   Upload,
   Video,
   ClipboardPaste,
   X,
+  Copy,
+  Receipt,
+  Wallet,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { copyTextToClipboard } from '@/lib/clipboard';
@@ -39,7 +37,7 @@ interface MerchantPreset {
   symbol: string;
 }
 
-// Cohesive, elegant, dark-theme merchant presets (No random rainbow colors)
+// Cohesive, elegant, dark-theme merchant presets
 const PRESET_MERCHANTS: MerchantPreset[] = [
   { id: 'swiggy', name: 'Swiggy Instamart', upiId: 'swiggy@icici', category: 'Food & Groceries', defaultAmount: 450, symbol: 'S' },
   { id: 'zomato', name: 'Zomato Dining', upiId: 'zomato@hdfcbank', category: 'Food Delivery', defaultAmount: 620, symbol: 'Z' },
@@ -53,6 +51,9 @@ export default function ScanAndPayPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loadingUser, setLoadingUser] = useState(true);
+
+  // Flow Step: 'SCAN' (Step 1) -> 'REVIEW' (Step 2) -> 'SUCCESS'
+  const [activeStep, setActiveStep] = useState<'SCAN' | 'REVIEW' | 'SUCCESS'>('SCAN');
 
   // Scanner UI states
   const [liveScannerActive, setLiveScannerActive] = useState(false);
@@ -80,11 +81,14 @@ export default function ScanAndPayPage() {
   const [quoteLoading, setQuoteLoading] = useState(false);
 
   // Conversion & Payment Flow State
-  // 'IDLE' -> 'CONVERTING' -> 'CONVERTED' -> 'ENTER_PIN' -> 'PAYING' -> 'SUCCESS'
-  const [flowState, setFlowState] = useState<'IDLE' | 'CONVERTING' | 'CONVERTED' | 'ENTER_PIN' | 'PAYING' | 'SUCCESS'>('IDLE');
+  const [isConverting, setIsConverting] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
+  const [isConverted, setIsConverted] = useState(false);
   const [upiPin, setUpiPin] = useState('1234');
   const [paymentResult, setPaymentResult] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState('');
+  const [copiedUpi, setCopiedUpi] = useState(false);
+  const [copiedUtr, setCopiedUtr] = useState(false);
 
   // Load user
   const loadUser = async () => {
@@ -117,8 +121,8 @@ export default function ScanAndPayPage() {
 
     setQuoteLoading(true);
     setErrorMessage('');
-    if (flowState === 'CONVERTED') {
-      setFlowState('IDLE');
+    if (isConverted) {
+      setIsConverted(false);
     }
 
     fetch('/api/pay/quote', {
@@ -208,7 +212,7 @@ export default function ScanAndPayPage() {
       });
   };
 
-  // Decode QR from file upload / camera snapshot using barcode-detector (supports dark-theme/inverted QR codes natively)
+  // Decode QR from file upload / camera snapshot
   const handleImageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -254,7 +258,7 @@ export default function ScanAndPayPage() {
         }
       }
 
-      // 3. Fallback: downscale onto canvas for large camera photos (e.g. 48MP)
+      // 3. Fallback: downscale onto canvas for large camera photos
       if (!decodedText) {
         try {
           const img = new Image();
@@ -302,7 +306,7 @@ export default function ScanAndPayPage() {
     }
   };
 
-  // Open Native Camera Shutter (Direct mobile OS camera)
+  // Open Native Camera Shutter
   const triggerNativeCamera = () => {
     setCameraError('');
     if (cameraInputRef.current) {
@@ -320,12 +324,11 @@ export default function ScanAndPayPage() {
     }
   };
 
-  // Start Live Camera Video Stream using navigator.mediaDevices.getUserMedia
+  // Start Live Camera Video Stream
   const startLiveScanner = async () => {
     setCameraError('');
 
     if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-      // Insecure context (HTTP) -> Fallback to native camera snapshot
       triggerNativeCamera();
       return;
     }
@@ -352,7 +355,6 @@ export default function ScanAndPayPage() {
       const detector = getDetector();
       if (!detector) return;
 
-      // Continuous scanning loop
       let active = true;
       const scanTick = async () => {
         if (!active) return;
@@ -367,7 +369,7 @@ export default function ScanAndPayPage() {
               return;
             }
           } catch {
-            // Ignore frame-by-frame transient detection errors
+            // Ignore transient frame detection errors
           }
         }
 
@@ -412,7 +414,6 @@ export default function ScanAndPayPage() {
     }
   };
 
-  // Smart camera launcher: if live video stream is supported, start live viewfinder; otherwise launch native camera shutter
   const handleOpenScanner = () => {
     setCameraError('');
     if (typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
@@ -422,7 +423,6 @@ export default function ScanAndPayPage() {
     }
   };
 
-  // Cleanup camera stream on unmount
   useEffect(() => {
     return () => {
       stopLiveScanner();
@@ -438,7 +438,7 @@ export default function ScanAndPayPage() {
       setInrAmount(preset.defaultAmount.toString());
     }
     setErrorMessage('');
-    setFlowState('IDLE');
+    setIsConverted(false);
   };
 
   // Paste from clipboard helper
@@ -455,9 +455,21 @@ export default function ScanAndPayPage() {
     }
   };
 
-  // Convert USDC to INR
-  const handleConvert = async () => {
-    setFlowState('CONVERTING');
+  // Step 1 -> Step 2: Convert USDC to INR and proceed to Review Page
+  const handleConvertAndProceed = async () => {
+    if (paymentMethod === 'INR') {
+      setActiveStep('REVIEW');
+      setErrorMessage('');
+      return;
+    }
+
+    if (isConverted) {
+      setActiveStep('REVIEW');
+      setErrorMessage('');
+      return;
+    }
+
+    setIsConverting(true);
     setErrorMessage('');
     try {
       const res = await fetch('/api/pay/convert', {
@@ -475,21 +487,24 @@ export default function ScanAndPayPage() {
       }
 
       await loadUser();
-      setFlowState('CONVERTED');
+      setIsConverted(true);
+      // Bring user to Part 2: Payment Review & PIN page
+      setActiveStep('REVIEW');
     } catch (err: any) {
       setErrorMessage(err.message);
-      setFlowState('IDLE');
+    } finally {
+      setIsConverting(false);
     }
   };
 
-  // Execute payment
+  // Step 2 -> Step 3: Execute payment
   const handlePay = async () => {
-    setFlowState('PAYING');
+    setIsPaying(true);
     setErrorMessage('');
 
     try {
       const isSolana = scannedUpi && scannedUpi.length >= 32 && !scannedUpi.includes('@');
-      const isConvertedInr = flowState === 'CONVERTED';
+      const isConvertedInr = isConverted;
 
       const res = await fetch('/api/pay/execute', {
         method: 'POST',
@@ -513,20 +528,21 @@ export default function ScanAndPayPage() {
       }
 
       setPaymentResult(data);
-      setFlowState('SUCCESS');
+      setActiveStep('SUCCESS');
       await loadUser();
 
       // Trigger Celebration Confetti
       try {
         confetti({
-          particleCount: 80,
-          spread: 70,
+          particleCount: 90,
+          spread: 80,
           origin: { y: 0.6 },
         });
       } catch {}
     } catch (err: any) {
       setErrorMessage(err.message);
-      setFlowState(paymentMethod === 'USDC' ? 'CONVERTED' : 'IDLE');
+    } finally {
+      setIsPaying(false);
     }
   };
 
@@ -559,23 +575,59 @@ export default function ScanAndPayPage() {
         className="hidden"
       />
 
-      {/* Top Header */}
+      {/* TOP STEPPER HEADER */}
       <div className="flex items-center justify-between mb-4">
-        <Link
-          href="/dashboard"
-          className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Dashboard</span>
-        </Link>
-        <div className="flex items-center gap-1 text-[11px] text-cyan-400 font-semibold px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/30">
-          <Scan className="w-3 h-3" />
-          <span>Scan & Pay (UPI)</span>
+        {activeStep === 'REVIEW' ? (
+          <button
+            type="button"
+            onClick={() => setActiveStep('SCAN')}
+            className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition group"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+            <span>Back to Scan</span>
+          </button>
+        ) : (
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition group"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+            <span>Dashboard</span>
+          </Link>
+        )}
+
+        {/* 2-Step Progress Indicator */}
+        <div className="flex items-center gap-2">
+          <div
+            className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border transition ${
+              activeStep === 'SCAN'
+                ? 'bg-[#00BAF2]/15 text-[#00BAF2] border-[#00BAF2]/40 shadow-[0_0_10px_rgba(0,186,242,0.2)]'
+                : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+            }`}
+          >
+            {activeStep !== 'SCAN' ? <Check className="w-3 h-3 text-emerald-400" /> : <Scan className="w-3 h-3" />}
+            <span>1. Scan & Details</span>
+          </div>
+
+          <div
+            className={`flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full border transition ${
+              activeStep === 'REVIEW'
+                ? 'bg-[#00BAF2]/15 text-[#00BAF2] border-[#00BAF2]/40 shadow-[0_0_10px_rgba(0,186,242,0.2)]'
+                : activeStep === 'SUCCESS'
+                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                : 'bg-white/5 text-neutral-500 border-white/10'
+            }`}
+          >
+            <Lock className="w-3 h-3" />
+            <span>2. Pay</span>
+          </div>
         </div>
       </div>
 
-      {flowState === 'SUCCESS' && paymentResult ? (
-        /* SUCCESS SCREEN */
+      {/* ======================================================== */}
+      {/* PART 3: PAYMENT SUCCESSFUL RECEIPT                       */}
+      {/* ======================================================== */}
+      {activeStep === 'SUCCESS' && paymentResult ? (
         <div className="rounded-3xl p-6 text-center border border-emerald-500/30 bg-[#0e1014]/90 backdrop-blur-xl shadow-2xl space-y-5 animate-fade-in">
           <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
             <CheckCircle2 className="w-8 h-8" />
@@ -616,9 +668,20 @@ export default function ScanAndPayPage() {
               </span>
             </div>
             {paymentResult.utr && (
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-neutral-400">Bank UTR Reference</span>
-                <span className="font-mono text-cyan-400 font-semibold">{paymentResult.utr}</span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await copyTextToClipboard(paymentResult.utr);
+                    setCopiedUtr(true);
+                    setTimeout(() => setCopiedUtr(false), 2000);
+                  }}
+                  className="font-mono text-cyan-400 font-semibold flex items-center gap-1 hover:underline"
+                >
+                  <span>{paymentResult.utr}</span>
+                  {copiedUtr ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                </button>
               </div>
             )}
             <div className="flex justify-between">
@@ -628,13 +691,13 @@ export default function ScanAndPayPage() {
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-neutral-400">INR Wallet Balance</span>
+              <span className="text-neutral-400">Updated INR Balance</span>
               <span className="font-mono text-emerald-400 font-semibold">
                 ₹{Number(user.virtualInrBalance || 0).toFixed(2)}
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-neutral-400">USDC Balance</span>
+              <span className="text-neutral-400">Updated USDC Balance</span>
               <span className="font-mono text-cyan-400 font-semibold">
                 ${Number(user.virtualUsdcBalance || 0).toFixed(2)}
               </span>
@@ -648,7 +711,8 @@ export default function ScanAndPayPage() {
           <div className="space-y-2 pt-2">
             <button
               onClick={() => {
-                setFlowState('IDLE');
+                setActiveStep('SCAN');
+                setIsConverted(false);
                 setPaymentResult(null);
                 setErrorMessage('');
               }}
@@ -664,9 +728,200 @@ export default function ScanAndPayPage() {
             </Link>
           </div>
         </div>
+      ) : activeStep === 'REVIEW' ? (
+        /* ======================================================== */
+        /* PART 2: PAYMENT REVIEW, ENTER UPI PIN & PAY              */
+        /* ======================================================== */
+        <div className="space-y-4 animate-fade-in">
+          {/* Conversion Notification Pill */}
+          {paymentMethod === 'USDC' && isConverted && (
+            <div className="p-3 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>
+                  Converted <strong>{quote?.totalUsdcToDeduct?.toFixed(4)} USDC</strong> to INR
+                </span>
+              </div>
+              <span className="text-[10px] font-mono font-bold bg-emerald-500/20 px-2 py-0.5 rounded-full text-emerald-300">
+                Ready to Pay
+              </span>
+            </div>
+          )}
+
+          {/* ERROR ALERT */}
+          {errorMessage && (
+            <div className="p-3 rounded-xl bg-rose-950/50 border border-rose-500/40 text-rose-300 text-xs flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          {/* MERCHANT & PAYMENT DETAILS CARD */}
+          <div className="rounded-3xl p-5 bg-[#0e1014]/90 border border-white/10 shadow-xl backdrop-blur-xl space-y-4">
+            {/* Merchant Identity Banner */}
+            <div className="flex items-center gap-3.5 pb-4 border-b border-white/10">
+              <div className="w-12 h-12 rounded-2xl bg-neutral-900 border border-white/10 text-white font-bold flex items-center justify-center text-lg shadow-inner">
+                <Store className="w-6 h-6 text-cyan-400" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h2 className="text-base font-bold text-white truncate">{merchantName}</h2>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-mono mt-0.5">
+                  <span className="truncate max-w-[190px]">{scannedUpi}</span>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await copyTextToClipboard(scannedUpi);
+                      setCopiedUpi(true);
+                      setTimeout(() => setCopiedUpi(false), 2000);
+                    }}
+                    className="p-1 hover:text-white transition"
+                    title="Copy UPI ID"
+                  >
+                    {copiedUpi ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                  </button>
+                </div>
+                <span className="inline-block mt-1 text-[9px] px-2 py-0.5 rounded-full bg-neutral-900 text-neutral-400 border border-white/10 uppercase font-semibold">
+                  {merchantCategory}
+                </span>
+              </div>
+            </div>
+
+            {/* Prominent Payment Amount */}
+            <div className="text-center py-2 bg-black/40 rounded-2xl border border-white/5">
+              <span className="text-[11px] text-neutral-400 uppercase tracking-wider font-semibold">
+                Total Amount Payable
+              </span>
+              <div className="text-3xl font-black text-white mt-1">
+                <span className="text-emerald-400">₹</span>
+                {parseFloat(inrAmount).toFixed(2)}
+              </div>
+              <div className="text-[11px] text-cyan-400 font-medium mt-0.5 flex items-center justify-center gap-1">
+                <span>≈ {quote?.totalUsdcToDeduct ? `${quote.totalUsdcToDeduct.toFixed(4)} USDC` : 'USDC'}</span>
+                <span className="text-neutral-500">•</span>
+                <span className="text-neutral-400">Instant UPI</span>
+              </div>
+            </div>
+
+            {/* Bill Details Breakdown */}
+            <div className="space-y-2 text-xs pt-1">
+              <div className="flex justify-between text-neutral-400">
+                <span>Payment Method</span>
+                <span className="font-semibold text-white">
+                  {paymentMethod === 'USDC' ? 'USDC Balance (Instant Auto-Convert)' : 'INR Balance'}
+                </span>
+              </div>
+
+              {quote && paymentMethod === 'USDC' && (
+                <>
+                  <div className="flex justify-between text-neutral-400">
+                    <span>Base USDC</span>
+                    <span className="font-mono text-neutral-200">{quote.baseUsdc.toFixed(4)} USDC</span>
+                  </div>
+                  <div className="flex justify-between text-neutral-400">
+                    <span>Platform Fee (1%)</span>
+                    <span className="font-mono text-neutral-300">+{quote.platformFeeUsdc.toFixed(4)} USDC</span>
+                  </div>
+                  <div className="flex justify-between text-neutral-400">
+                    <span>TDS (1% Sec 194S)</span>
+                    <span className="font-mono text-neutral-300">+{quote.tdsUsdc.toFixed(4)} USDC</span>
+                  </div>
+                  <div className="flex justify-between text-neutral-400">
+                    <span>Conversion Rate</span>
+                    <span className="font-mono text-neutral-200">1 USDC = ₹86.42</span>
+                  </div>
+                </>
+              )}
+
+              <div className="flex justify-between text-neutral-400 pt-1.5 border-t border-white/5">
+                <span>Available Balance</span>
+                <span className="font-mono text-white font-semibold">
+                  {paymentMethod === 'USDC'
+                    ? `$${Number(user.virtualUsdcBalance || 0).toFixed(2)} USDC`
+                    : `₹${Number(user.virtualInrBalance || 0).toFixed(2)} INR`}
+                </span>
+              </div>
+
+              <div className="flex justify-between text-neutral-400">
+                <span>Payer Account</span>
+                <span className="text-white font-medium">{user.name}</span>
+              </div>
+            </div>
+
+            {/* ENTER UPI PIN / SECURITY CODE */}
+            <div className="pt-2">
+              <div className="p-4 rounded-2xl bg-black/70 border border-[#00BAF2]/40 shadow-inner space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-[#00BAF2]" />
+                    <span>Enter UPI PIN</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setUpiPin('1234')}
+                    className="text-[10px] text-cyan-400 hover:underline font-medium"
+                  >
+                    Use Test PIN (1234)
+                  </button>
+                </div>
+
+                <div className="relative">
+                  <input
+                    type="password"
+                    maxLength={4}
+                    value={upiPin}
+                    onChange={(e) => setUpiPin(e.target.value)}
+                    placeholder="••••"
+                    autoFocus
+                    className="w-full py-2.5 px-4 rounded-xl bg-neutral-900 border border-white/15 text-center font-mono text-2xl tracking-[0.6em] text-white focus:outline-none focus:border-[#00BAF2] shadow-inner"
+                  />
+                </div>
+
+                <p className="text-[10px] text-neutral-400 text-center flex items-center justify-center gap-1">
+                  <ShieldCheck className="w-3 h-3 text-emerald-400" />
+                  <span>Authorized directly through NPCI-compliant UPI interface</span>
+                </p>
+              </div>
+            </div>
+
+            {/* PAY BUTTON */}
+            <div className="pt-1 space-y-2">
+              <button
+                type="button"
+                onClick={handlePay}
+                disabled={isPaying || !upiPin || upiPin.length < 4}
+                className="w-full py-4 px-4 rounded-2xl bg-[#00BAF2] hover:bg-[#00BAF2]/90 text-black font-extrabold text-sm hover:scale-[1.01] active:scale-98 transition shadow-lg shadow-[#00BAF2]/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
+              >
+                {isPaying ? (
+                  <span className="flex items-center gap-2">
+                    <span className="animate-spin rounded-full h-4 w-4 border-2 border-black border-t-transparent" />
+                    <span>Processing Payment of ₹{inrAmount}...</span>
+                  </span>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4" />
+                    <span>Pay ₹{parseFloat(inrAmount).toFixed(2)} to {merchantName.split(' ')[0]}</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveStep('SCAN')}
+                className="w-full py-2 text-xs text-neutral-400 hover:text-white transition text-center"
+              >
+                Cancel or Change Details
+              </button>
+            </div>
+          </div>
+        </div>
       ) : (
-        /* SCAN & PAY MAIN FLOW */
-        <div className="space-y-4">
+        /* ======================================================== */
+        /* PART 1: SCAN QR, MERCHANT DETAILS, AMOUNT & CONVERT      */
+        /* ======================================================== */
+        <div className="space-y-4 animate-fade-in">
           {/* CAMERA QR SCANNER VIEWPORT */}
           <div className="rounded-3xl p-4 bg-[#0e1014]/90 border border-white/10 shadow-2xl relative overflow-hidden backdrop-blur-xl">
             <div className="flex items-center justify-between mb-3">
@@ -835,7 +1090,7 @@ export default function ScanAndPayPage() {
             </div>
           </div>
 
-          {/* QUICK MERCHANT PRESETS (Sleek Dark Theme - No Rainbow Colors) */}
+          {/* QUICK MERCHANT PRESETS */}
           <div>
             <div className="flex items-center justify-between mb-2 px-1">
               <span className="text-[11px] font-semibold text-neutral-400 uppercase tracking-wider">
@@ -1002,91 +1257,35 @@ export default function ScanAndPayPage() {
               </div>
             )}
 
-            {/* UPI PIN INPUT */}
-            {(flowState === 'CONVERTED' || paymentMethod === 'INR') && (
-              <div className="p-3.5 rounded-2xl bg-black/60 border border-emerald-500/40 animate-fade-in">
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>Enter UPI PIN</span>
-                  </label>
-                  <span className="text-[10px] text-neutral-400">Default: 1234</span>
-                </div>
-                <input
-                  type="password"
-                  maxLength={4}
-                  value={upiPin}
-                  onChange={(e) => setUpiPin(e.target.value)}
-                  placeholder="1234"
-                  className="w-full px-3 py-2 rounded-xl bg-neutral-900 border border-neutral-700 text-center font-mono text-xl tracking-[0.5em] text-white focus:outline-none focus:border-emerald-500"
-                />
-              </div>
-            )}
-
-            {/* DYNAMIC ACTION BUTTONS */}
+            {/* PRIMARY ACTION BUTTON -> BRING TO PART 2 */}
             <div className="pt-2">
-              {paymentMethod === 'USDC' ? (
-                /* Flow A: 2-step (Convert -> Pay) */
-                flowState !== 'CONVERTED' ? (
-                  <button
-                    type="button"
-                    onClick={handleConvert}
-                    disabled={flowState === 'CONVERTING' || !quote}
-                    className="w-full py-3.5 px-4 rounded-2xl bg-[#00BAF2] hover:bg-[#00BAF2]/90 text-black font-bold text-sm hover:scale-[1.01] active:scale-98 transition shadow-lg shadow-[#00BAF2]/25 flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {flowState === 'CONVERTING' ? (
-                      <span className="flex items-center gap-2">
-                        <span className="animate-spin rounded-full h-4 w-4 border-2 border-black border-t-transparent" />
-                        <span>Converting USDC to INR...</span>
-                      </span>
-                    ) : (
-                      <>
-                        <span>Convert {quote?.totalUsdcToDeduct || ''} USDC & Pay</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="p-2 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-xs text-center font-semibold flex items-center justify-center gap-1.5">
-                      <Check className="w-4 h-4 text-emerald-400" />
-                      <span>Converted to INR in Virtual Ledger ✓</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={handlePay}
-                      disabled={(flowState as string) === 'PAYING' || !upiPin}
-                      className="w-full py-3.5 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-sm hover:scale-[1.01] active:scale-98 transition shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      {(flowState as string) === 'PAYING' ? (
-                        <span className="flex items-center gap-2">
-                          <span className="animate-spin rounded-full h-4 w-4 border-2 border-black border-t-transparent" />
-                          <span>Processing UPI Payment...</span>
-                        </span>
-                      ) : (
-                        <span>Pay ₹{inrAmount} to {merchantName.split(' ')[0]}</span>
-                      )}
-                    </button>
-                  </div>
-                )
-              ) : (
-                /* Flow C: Direct INR payment */
-                <button
-                  type="button"
-                  onClick={handlePay}
-                  disabled={flowState === 'PAYING' || !upiPin}
-                  className="w-full py-3.5 px-4 rounded-2xl bg-amber-400 hover:bg-amber-300 text-black font-bold text-sm hover:scale-[1.01] active:scale-98 transition shadow-lg shadow-amber-500/25 flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {flowState === 'PAYING' ? (
-                    <span className="flex items-center gap-2">
-                      <span className="animate-spin rounded-full h-4 w-4 border-2 border-black border-t-transparent" />
-                      <span>Processing UPI Payment...</span>
+              <button
+                type="button"
+                onClick={handleConvertAndProceed}
+                disabled={isConverting || quoteLoading || (!quote && paymentMethod === 'USDC')}
+                className="w-full py-3.5 px-4 rounded-2xl bg-[#00BAF2] hover:bg-[#00BAF2]/90 text-black font-extrabold text-sm hover:scale-[1.01] active:scale-98 transition shadow-lg shadow-[#00BAF2]/25 flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isConverting ? (
+                  <span className="flex items-center gap-2">
+                    <span className="animate-spin rounded-full h-4 w-4 border-2 border-black border-t-transparent" />
+                    <span>Converting USDC to INR...</span>
+                  </span>
+                ) : paymentMethod === 'USDC' ? (
+                  <>
+                    <span>
+                      {isConverted
+                        ? `Continue to Payment Review (₹${inrAmount})`
+                        : `Convert ${quote?.totalUsdcToDeduct ? quote.totalUsdcToDeduct.toFixed(4) : ''} USDC & Continue`}
                     </span>
-                  ) : (
-                    <span>Pay ₹{inrAmount} with INR</span>
-                  )}
-                </button>
-              )}
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                ) : (
+                  <>
+                    <span>Proceed to Payment Review (₹{inrAmount})</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

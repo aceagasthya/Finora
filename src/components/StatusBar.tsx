@@ -19,7 +19,7 @@ export default function StatusBar() {
   }, []);
 
   return (
-    <div className="w-full h-11 px-6 flex items-center justify-between select-none pointer-events-none text-white z-50 bg-black/90 backdrop-blur-md shrink-0">
+    <div className="w-full h-11 px-6 flex items-center justify-between select-none pointer-events-none text-white z-50 bg-transparent shrink-0">
       {/* Time */}
       <span className="text-[13px] font-semibold tracking-tight font-sans">
         {time}

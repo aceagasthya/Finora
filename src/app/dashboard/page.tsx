@@ -255,22 +255,22 @@ export default function DashboardPage() {
           className="finora-card-usdc rounded-[28px] p-5 cursor-pointer relative overflow-hidden group transition-transform active:scale-[0.99]"
         >
           {/* Subtle Watermark Finora Logo right-centered matching mockup */}
-          <div className="absolute top-1/2 -translate-y-1/2 right-4 opacity-20 group-hover:opacity-30 transition-opacity pointer-events-none">
+          <div className="absolute top-1/2 -translate-y-1/2 right-4 opacity-25 group-hover:opacity-40 transition-opacity pointer-events-none">
             <img
               src="/finora-logo.png"
               alt=""
-              width={40}
-              height={40}
-              style={{ width: '40px', height: '40px', maxWidth: '40px', maxHeight: '40px', objectFit: 'contain' }}
-              className="w-10 h-10 object-contain"
+              width={42}
+              height={42}
+              style={{ width: '42px', height: '42px', maxWidth: '42px', maxHeight: '42px', objectFit: 'contain' }}
+              className="w-10 h-10 object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
             />
           </div>
 
           {/* Top Row: Token Icon & Card Name */}
           <div className="flex items-center justify-between mb-2.5 relative z-10">
             <div className="flex items-center gap-2.5">
-              <img src="/usdc-icon.svg" alt="USDC" className="w-8 h-8 rounded-full shadow-md shrink-0" />
-              <div className="flex items-center gap-1 text-sm font-semibold text-white tracking-tight">
+              <img src="/usdc-icon.svg" alt="USDC" className="w-8 h-8 rounded-full shadow-md shrink-0 ring-1 ring-white/10" />
+              <div className="flex items-center gap-1 text-sm font-semibold text-white tracking-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
                 <span>USDC Wallet</span>
                 <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:translate-x-0.5 transition-transform" />
               </div>
@@ -279,7 +279,7 @@ export default function DashboardPage() {
 
           {/* Large Balance Display */}
           <div className="mb-3.5 relative z-10">
-            <div className="text-2xl sm:text-3xl font-black text-white tracking-tight font-sans truncate">
+            <div className="text-2xl sm:text-3xl font-black text-white tracking-tight font-sans truncate drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">
               $ {displayUsdcBalance}
             </div>
           </div>
@@ -292,12 +292,12 @@ export default function DashboardPage() {
             }}
             className="flex items-center justify-between pt-1 relative z-10 group/btn"
           >
-            <div className="font-mono text-[11px] text-neutral-400 tracking-wide truncate max-w-[82%] group-hover/btn:text-neutral-200 transition-colors">
+            <div className="font-mono text-[11px] text-neutral-300 tracking-wide truncate max-w-[82%] group-hover/btn:text-white transition-colors drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]">
               {displayUsdcAddress}
             </div>
             <button
               type="button"
-              className="p-1 rounded-md text-neutral-400 hover:text-white transition-colors shrink-0"
+              className="p-1 rounded-md text-neutral-400 hover:text-white transition-colors shrink-0 bg-black/40 backdrop-blur-sm border border-white/10"
               title="Copy Address"
             >
               {copiedUsdc ? (
@@ -315,22 +315,22 @@ export default function DashboardPage() {
           className="finora-card-inr rounded-[28px] p-5 cursor-pointer relative overflow-hidden group transition-transform active:scale-[0.99]"
         >
           {/* Subtle Watermark Finora Logo right-centered matching mockup */}
-          <div className="absolute top-1/2 -translate-y-1/2 right-4 opacity-20 group-hover:opacity-30 transition-opacity pointer-events-none">
+          <div className="absolute top-1/2 -translate-y-1/2 right-4 opacity-25 group-hover:opacity-40 transition-opacity pointer-events-none">
             <img
               src="/finora-logo.png"
               alt=""
-              width={40}
-              height={40}
-              style={{ width: '40px', height: '40px', maxWidth: '40px', maxHeight: '40px', objectFit: 'contain' }}
-              className="w-10 h-10 object-contain"
+              width={42}
+              height={42}
+              style={{ width: '42px', height: '42px', maxWidth: '42px', maxHeight: '42px', objectFit: 'contain' }}
+              className="w-10 h-10 object-contain drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]"
             />
           </div>
 
           {/* Top Row: Token Icon & Card Name */}
           <div className="flex items-center justify-between mb-2.5 relative z-10">
             <div className="flex items-center gap-2.5">
-              <img src="/inr-icon.svg" alt="INR" className="w-8 h-8 rounded-full shadow-md shrink-0" />
-              <div className="flex items-center gap-1 text-sm font-semibold text-white tracking-tight">
+              <img src="/inr-icon.svg" alt="INR" className="w-8 h-8 rounded-full shadow-md shrink-0 ring-1 ring-white/10" />
+              <div className="flex items-center gap-1 text-sm font-semibold text-white tracking-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
                 <span>INR Wallet</span>
                 <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:translate-x-0.5 transition-transform" />
               </div>
@@ -339,7 +339,7 @@ export default function DashboardPage() {
 
           {/* Large Balance Display */}
           <div className="mb-3.5 relative z-10">
-            <div className="text-2xl sm:text-3xl font-black text-white tracking-tight font-sans truncate">
+            <div className="text-2xl sm:text-3xl font-black text-white tracking-tight font-sans truncate drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">
               ₹ {displayInrBalance}
             </div>
           </div>
@@ -352,12 +352,12 @@ export default function DashboardPage() {
             }}
             className="flex items-center justify-between pt-1 relative z-10 group/btn"
           >
-            <div className="font-mono text-[11px] text-neutral-400 tracking-wider truncate max-w-[82%] group-hover/btn:text-neutral-200 transition-colors">
+            <div className="font-mono text-[11px] text-neutral-300 tracking-wider truncate max-w-[82%] group-hover/btn:text-white transition-colors drop-shadow-[0_1px_4px_rgba(0,0,0,0.9)]">
               {displayInrAccount}
             </div>
             <button
               type="button"
-              className="p-1 rounded-md text-neutral-400 hover:text-white transition-colors shrink-0"
+              className="p-1 rounded-md text-neutral-400 hover:text-white transition-colors shrink-0 bg-black/40 backdrop-blur-sm border border-white/10"
               title="Copy UPI ID"
             >
               {copiedInr ? (
